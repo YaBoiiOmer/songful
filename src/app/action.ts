@@ -1,13 +1,12 @@
 "use server";
 
-import fs from "fs";
 import ytdl from "@distube/ytdl-core";
 import ffmpeg from "fluent-ffmpeg";
 import { APP_CONFIG } from "@/config";
 
 export async function downloadSong(
   url: string
-): Promise<{ success: boolean; message: string; title: string; author: string }> {
+): Promise<{ success: boolean; message: string; title: string | undefined; author: string | undefined }> {
   const stream = ytdl(url, { filter: "audioonly" });
   const info = await ytdl.getBasicInfo(url);
   const outputPath = `${APP_CONFIG.outputDir}/${info.videoDetails.title}.mp3`;
@@ -15,11 +14,12 @@ export async function downloadSong(
   return new Promise((resolve, reject) => {
     console.log("Starting to download song: ", info.videoDetails.title, "by", info.videoDetails.author.name);
 
-    // ffmpeg(stream).audioCodec("libmp3lame").setStartTime(0).duration(30).format("mp3").save(outputPath);
-
-    stream
-      .pipe(fs.createWriteStream(outputPath))
-      .on("close", () => {
+    ffmpeg(stream)
+      .audioCodec("libmp3lame")
+      .setStartTime(0)
+      .duration(APP_CONFIG.songDuration)
+      .format("mp3")
+      .on("end", () => {
         resolve({
           success: true,
           message: `Downloaded '${info.videoDetails.title}' by ${info.videoDetails.author.name} finished.`,
@@ -32,6 +32,7 @@ export async function downloadSong(
           success: false,
           message: `Error downloading: ${error.message}`,
         });
-      });
+      })
+      .save(outputPath);
   });
 }
