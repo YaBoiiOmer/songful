@@ -1,8 +1,17 @@
-import { APP_CONFIG } from "@/config";
+import { APP_CONFIG, spotify } from "@/config";
+import ytsr from "@distube/ytsr";
 import fs from "fs";
 
 export interface Settings {
   spotifyPlaylistUrl: string;
+}
+
+export interface Song {
+  name: string;
+  artists: string[];
+  album: string;
+  url: string;
+  filePath: string;
 }
 
 const defaultSettings: Settings = {
@@ -10,6 +19,7 @@ const defaultSettings: Settings = {
 };
 
 let settings: Settings = await loadSettings();
+let songs: Song[] = await loadSongs();
 
 async function loadSettings() {
   try {
@@ -26,8 +36,12 @@ async function loadSettings() {
 
 export async function updateSettings(newSettings: Settings) {
   try {
+    const oldSettings = settings;
     fs.writeFileSync(APP_CONFIG.settingsPath, JSON.stringify(newSettings, null, 2));
     settings = newSettings;
+    if (newSettings.spotifyPlaylistUrl !== oldSettings.spotifyPlaylistUrl) {
+      songs = await loadSongs();
+    }
   } catch (error) {
     console.error("Failed to save settings:", error);
   }
@@ -38,4 +52,46 @@ export async function getSettings() {
     settings = await loadSettings();
   }
   return settings;
+}
+
+async function loadSongs() {
+  const settings = await getSettings();
+  if (fs.existsSync(APP_CONFIG.songsPath)) {
+    console.log("Loading songs from file:", APP_CONFIG.songsPath);
+    const songsFile = fs.readFileSync(APP_CONFIG.songsPath, "utf8");
+    return JSON.parse(songsFile) as Song[];
+  }
+
+  console.log("Songs file not found, Loading songs from Spotify:");
+  const playlistId = settings.spotifyPlaylistUrl.split("https://open.spotify.com/playlist/")[1];
+  const playlist = await spotify.playlists.getPlaylist(playlistId);
+
+  const concatArtists = (artists: any[]) => artists.map((artist) => artist.name).join(", ");
+  const artistNames = (artists: any[]) => artists.map((artist) => artist.name as string);
+
+  const songs = await Promise.all(
+    playlist.tracks.items.map(async (item) => {
+      const searchQuery = `${concatArtists(item.track.artists)} - ${item.track.name} Lyrics`;
+      const search = await ytsr(searchQuery, { type: "video", limit: 1 });
+      const video = search.items[0];
+      return {
+        name: item.track.name,
+        artists: artistNames(item.track.artists),
+        album: item.track.album.name,
+        url: video.url,
+        filePath: "",
+      };
+    })
+  );
+
+  fs.writeFileSync(APP_CONFIG.songsPath, JSON.stringify(songs, null, 2));
+
+  return songs;
+}
+
+export async function getSongs() {
+  if (!songs) {
+    songs = await loadSongs();
+  }
+  return songs;
 }

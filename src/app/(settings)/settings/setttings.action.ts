@@ -9,7 +9,6 @@ import ytsr from "@distube/ytsr";
 export async function saveSettingsAction(data: SettingsFormSchema) {
   try {
     await updateSettings(data);
-    downloadSongs(data.spotifyPlaylistUrl);
     revalidatePath("/settings");
     return { success: true };
   } catch (err) {

@@ -1,8 +1,9 @@
 import { SpotifyApi } from "@spotify/web-api-ts-sdk";
 
 export const APP_CONFIG = {
-  settingsPath: "./settings.json",
   outputDir: "./songs",
+  songsPath: "./songs/songs.json",
+  settingsPath: "./settings.json",
   songDuration: 30,
 };
 

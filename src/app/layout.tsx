@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Song Downloader",
-  description: "Download songs from YouTube",
+  title: "Songful",
+  description: "A fun music guessing game",
 };
 
 export default function RootLayout({
