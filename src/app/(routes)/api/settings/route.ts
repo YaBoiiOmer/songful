@@ -1,4 +1,4 @@
-import { getSettings, updateSettings } from "@/use-cases/settings";
+import { getSettings, updateSettings } from "@/settings";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {

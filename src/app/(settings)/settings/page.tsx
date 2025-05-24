@@ -1,4 +1,4 @@
-import { getSettings } from "@/use-cases/settings";
+import { getSettings } from "@/settings";
 import { SettingsForm } from "./settings-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";

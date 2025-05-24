@@ -14,6 +14,11 @@ export interface Song {
   filePath: string;
 }
 
+export interface DownloadedSong extends Song {
+  number: number;
+  total: number;
+}
+
 const defaultSettings: Settings = {
   spotifyPlaylistUrl: "",
 };
@@ -40,8 +45,9 @@ export async function updateSettings(newSettings: Settings) {
     fs.writeFileSync(APP_CONFIG.settingsPath, JSON.stringify(newSettings, null, 2));
     settings = newSettings;
     if (newSettings.spotifyPlaylistUrl !== oldSettings.spotifyPlaylistUrl) {
-      songs = await loadSongs();
+      songs = await loadSongs(true);
     }
+    return { newPlaylist: newSettings.spotifyPlaylistUrl !== oldSettings.spotifyPlaylistUrl };
   } catch (error) {
     console.error("Failed to save settings:", error);
   }
@@ -54,9 +60,9 @@ export async function getSettings() {
   return settings;
 }
 
-async function loadSongs() {
+async function loadSongs(newPlaylist: boolean = false) {
   const settings = await getSettings();
-  if (fs.existsSync(APP_CONFIG.songsPath)) {
+  if (!newPlaylist && fs.existsSync(APP_CONFIG.songsPath)) {
     console.log("Loading songs from file:", APP_CONFIG.songsPath);
     const songsFile = fs.readFileSync(APP_CONFIG.songsPath, "utf8");
     return JSON.parse(songsFile) as Song[];
@@ -74,6 +80,7 @@ async function loadSongs() {
       const searchQuery = `${concatArtists(item.track.artists)} - ${item.track.name} Lyrics`;
       const search = await ytsr(searchQuery, { type: "video", limit: 1 });
       const video = search.items[0];
+      console;
       return {
         name: item.track.name,
         artists: artistNames(item.track.artists),
