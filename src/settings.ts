@@ -44,11 +44,22 @@ export async function updateSettings(newSettings: Settings) {
     const oldSettings = settings;
     fs.writeFileSync(APP_CONFIG.settingsPath, JSON.stringify(newSettings, null, 2));
     settings = newSettings;
-    if (newSettings.spotifyPlaylistUrl !== oldSettings.spotifyPlaylistUrl) {
+    const isNewPlaylist = newSettings.spotifyPlaylistUrl !== oldSettings.spotifyPlaylistUrl;
+    if (isNewPlaylist) {
       songs = await loadSongs(true);
     }
-    return { newPlaylist: newSettings.spotifyPlaylistUrl !== oldSettings.spotifyPlaylistUrl };
+    return {
+      isNewPlaylist,
+      songsLoaded: songs.length,
+    };
   } catch (error) {
+    if (error instanceof Error && error.message.includes("404 - Not Found")) {
+      console.error("Playlist not found, returning default settings");
+      return {
+        error: "Playlist not found",
+      };
+    }
+
     console.error("Failed to save settings:", error);
   }
 }
@@ -70,8 +81,8 @@ async function loadSongs(newPlaylist: boolean = false) {
 
   console.log("Songs file not found, Loading songs from Spotify:");
   const playlistId = settings.spotifyPlaylistUrl.split("https://open.spotify.com/playlist/")[1];
-  const playlist = await spotify.playlists.getPlaylist(playlistId);
 
+  const playlist = await spotify.playlists.getPlaylist(playlistId);
   const concatArtists = (artists: any[]) => artists.map((artist) => artist.name).join(", ");
   const artistNames = (artists: any[]) => artists.map((artist) => artist.name as string);
 

@@ -36,10 +36,12 @@ export function SettingsForm({ settings }: SettingsFormProps) {
     if (res.success) {
       toast.success("Settings saved successfully");
       if (res.newPlaylist) {
-        setIsDownloadDialogOpen(true);
+        setTimeout(() => {
+          toast.success(`Downloaded ${res.songsLoaded} songs`);
+        }, 1000);
       }
     } else {
-      toast.error("Failed to save settings");
+      toast.error(res.error);
     }
   };
 

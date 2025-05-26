@@ -13,21 +13,6 @@ export default function DownloadProgressDialog({ isOpen, onOpenChange }: Downloa
   const [song, setSong] = useState<DownloadedSong | null>(null);
   const [progress, setProgress] = useState<number>(0);
 
-  useEffect(() => {
-    const eventSource = new EventSource("/api/download-progress");
-
-    eventSource.onmessage = (event) => {
-      console.log(event.data);
-      const data = JSON.parse(event.data);
-      setSong(data);
-      setProgress(Math.round(((data.number ?? 0) / (data.total ?? 1)) * 100));
-    };
-
-    return () => {
-      eventSource.close();
-    };
-  }, []);
-
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="min-w-[300px]">

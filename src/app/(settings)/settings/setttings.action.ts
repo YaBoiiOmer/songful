@@ -6,9 +6,16 @@ import { updateSettings } from "@/settings";
 
 export async function saveSettingsAction(data: SettingsFormSchema) {
   try {
-    const newPlaylist = await updateSettings(data);
+    const result = await updateSettings(data);
+    if (!result) {
+      return { success: false, error: "Failed to update settings" };
+    }
+    if (result.error) {
+      return { success: false, error: result.error };
+    }
+    const { isNewPlaylist, songsLoaded } = result;
     revalidatePath("/settings");
-    return { success: true, newPlaylist: newPlaylist || false };
+    return { success: true, newPlaylist: isNewPlaylist || false, songsLoaded };
   } catch (err) {
     return { success: false };
   }
