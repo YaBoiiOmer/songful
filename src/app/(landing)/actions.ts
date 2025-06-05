@@ -5,11 +5,13 @@ import ffmpeg from "fluent-ffmpeg";
 import { APP_CONFIG } from "@/config";
 
 export async function downloadSong(
-  url: string
+  url: string,
+  title: string
 ): Promise<{ success: boolean; message: string; title: string | undefined; author: string | undefined }> {
   const stream = ytdl(url, { filter: "audioonly" });
   const info = await ytdl.getBasicInfo(url);
-  const outputPath = `${APP_CONFIG.outputDir}/${info.videoDetails.title}.mp3`;
+  const filename = info.videoDetails.title.replace(/['"|]/g, "");
+  const outputPath = `${APP_CONFIG.outputDir}/${filename}.mp3`;
 
   return new Promise((resolve, reject) => {
     console.log("Starting to download song: ", info.videoDetails.title, "by", info.videoDetails.author.name);

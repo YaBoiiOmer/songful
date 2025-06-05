@@ -1,6 +1,7 @@
 import { APP_CONFIG, spotify } from "@/config";
 import ytsr from "@distube/ytsr";
 import fs from "fs";
+import { downloadSong } from "./app/(landing)/actions";
 
 export interface Settings {
   spotifyPlaylistUrl: string;
@@ -28,6 +29,9 @@ let songs: Song[] = await loadSongs();
 
 async function loadSettings() {
   try {
+    if (!fs.existsSync(APP_CONFIG.outputDir)) {
+      fs.mkdirSync(APP_CONFIG.outputDir, { recursive: true });
+    }
     if (!fs.existsSync(APP_CONFIG.settingsPath)) {
       fs.writeFileSync(APP_CONFIG.settingsPath, JSON.stringify(defaultSettings, null, 2));
     }
@@ -86,12 +90,20 @@ async function loadSongs(newPlaylist: boolean = false) {
   const concatArtists = (artists: any[]) => artists.map((artist) => artist.name).join(", ");
   const artistNames = (artists: any[]) => artists.map((artist) => artist.name as string);
 
+  let songsFailed = 0;
+
   const songs = await Promise.all(
     playlist.tracks.items.map(async (item) => {
-      const searchQuery = `${concatArtists(item.track.artists)} - ${item.track.name} Lyrics`;
+      const searchQuery = `${concatArtists(item.track.artists)} - ${item.track.name} Lyrics Audio`;
       const search = await ytsr(searchQuery, { type: "video", limit: 1 });
       const video = search.items[0];
-      console;
+      try {
+        await downloadSong(video.url, item.track.name);
+      } catch (error) {
+        console.error("Failed to download song:", error);
+        songsFailed++;
+        return undefined;
+      }
       return {
         name: item.track.name,
         artists: artistNames(item.track.artists),
@@ -104,7 +116,7 @@ async function loadSongs(newPlaylist: boolean = false) {
 
   fs.writeFileSync(APP_CONFIG.songsPath, JSON.stringify(songs, null, 2));
 
-  return songs;
+  return songs.filter((song) => song !== undefined);
 }
 
 export async function getSongs() {
