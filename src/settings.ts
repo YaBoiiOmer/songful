@@ -1,7 +1,7 @@
 import { APP_CONFIG, spotify } from "@/config";
 import ytsr from "@distube/ytsr";
 import fs from "fs";
-import { downloadSong } from "./app/(landing)/actions";
+import { downloadSong } from "./app/(landing)/download-song";
 
 export interface Settings {
   spotifyPlaylistUrl: string;
@@ -98,19 +98,24 @@ async function loadSongs(newPlaylist: boolean = false) {
       const search = await ytsr(searchQuery, { type: "video", limit: 1 });
       const video = search.items[0];
       try {
-        await downloadSong(video.url, item.track.name);
+        const result = await downloadSong(video.url, item.track.name);
+        if (!result.success) {
+          console.error("Failed to download song:", result.message);
+          songsFailed++;
+          return undefined;
+        }
+        return {
+          name: item.track.name,
+          artists: artistNames(item.track.artists),
+          album: item.track.album.name,
+          url: video.url,
+          filePath: result.filePath,
+        };
       } catch (error) {
         console.error("Failed to download song:", error);
         songsFailed++;
         return undefined;
       }
-      return {
-        name: item.track.name,
-        artists: artistNames(item.track.artists),
-        album: item.track.album.name,
-        url: video.url,
-        filePath: "",
-      };
     })
   );
 
@@ -124,4 +129,9 @@ export async function getSongs() {
     songs = await loadSongs();
   }
   return songs;
+}
+
+export async function getRandomSong() {
+  const songs = await getSongs();
+  return songs[Math.floor(Math.random() * songs.length)];
 }
