@@ -10,6 +10,10 @@ export async function GET(request: NextRequest) {
 
   while (attempt < MAX_ATTEMPTS) {
     song = await getRandomSong();
+    if (!song) {
+      attempt++;
+      continue;
+    }
     songPath = song.filePath;
     if (fs.existsSync(songPath)) {
       const stat = fs.statSync(songPath);

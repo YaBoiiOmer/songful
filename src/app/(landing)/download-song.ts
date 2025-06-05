@@ -6,18 +6,23 @@ import { APP_CONFIG } from "@/config";
 import { spawn } from "child_process";
 import tmp from "tmp";
 
-async function downloadPreviewToTempFile(url: string, seconds: number): Promise<[string, () => void]> {
+type DownloadSongResult = {
+  success: boolean;
+  message: string;
+  title: string | undefined;
+  author: string | undefined;
+  filePath: string;
+};
+
+async function downloadFullAudioToTempFile(url: string): Promise<[string, () => void]> {
   return new Promise((resolve, reject) => {
     tmp.file({ postfix: ".mp3" }, (err, path, fd, cleanupCallback) => {
       if (err) return reject(err);
-      const stream = ytdl(url, { filter: "audioonly", quality: "lowestaudio" });
+      const stream = ytdl(url, { filter: "audioonly" });
       ffmpeg(stream)
         .audioCodec("libmp3lame")
-        .duration(seconds)
         .format("mp3")
-        .on("end", () => {
-          resolve([path, cleanupCallback]);
-        })
+        .on("end", () => resolve([path, cleanupCallback]))
         .on("error", reject)
         .save(path);
     });
@@ -27,12 +32,14 @@ async function downloadPreviewToTempFile(url: string, seconds: number): Promise<
 // Helper: Find first sound timestamp using silencedetect
 async function getFirstSoundTimestamp(filePath: string): Promise<number> {
   return new Promise((resolve, reject) => {
-    const ffmpegArgs = ["-i", filePath, "-af", "silencedetect=d=0.5", "-f", "null", "-"];
+    const ffmpegArgs = ["-i", filePath, "-af", "silencedetect=d=0.05", "-f", "null", "-"];
     const ffmpegProc = spawn("ffmpeg", ffmpegArgs);
     let stderr = "";
+
     ffmpegProc.stderr.on("data", (data) => {
       stderr += data.toString();
     });
+
     ffmpegProc.on("close", () => {
       const match = stderr.match(/silence_end: ([\d.]+)/);
       if (match) {
@@ -45,30 +52,18 @@ async function getFirstSoundTimestamp(filePath: string): Promise<number> {
   });
 }
 
-export async function downloadSong(
-  url: string,
-  title: string
-): Promise<{
-  success: boolean;
-  message: string;
-  title: string | undefined;
-  author: string | undefined;
-  filePath: string;
-}> {
+export async function downloadSong(url: string, title: string): Promise<DownloadSongResult> {
   const info = await ytdl.getBasicInfo(url);
-  const filename = info.videoDetails.title.replace(/['"|]/g, "");
+  const filename = info.videoDetails.title.replace(/['"|/()]/g, "");
   const outputPath = `${APP_CONFIG.outputDir}/${filename}.mp3`;
 
-  const [previewPath, cleanupCallback] = await downloadPreviewToTempFile(url, 8);
-
-  const startTime = await getFirstSoundTimestamp(previewPath);
-  console.log("First sound timestamp:", startTime);
-  cleanupCallback();
-
-  return new Promise((resolve, reject) => {
-    ffmpeg(ytdl(url, { filter: "audioonly" }))
+  const [audioPath, cleanupCallback] = await downloadFullAudioToTempFile(url);
+  const startTime = await getFirstSoundTimestamp(audioPath);
+  console.log("First sound timestamp:", startTime, outputPath);
+  return new Promise<DownloadSongResult>((resolve, reject) => {
+    ffmpeg(audioPath)
       .audioCodec("libmp3lame")
-      .setStartTime(startTime)
+      .setStartTime(startTime > 40 ? 0 : startTime)
       .duration(APP_CONFIG.songDuration)
       .format("mp3")
       .on("end", () => {
@@ -79,12 +74,14 @@ export async function downloadSong(
           author: info.videoDetails.author.name,
           filePath: outputPath,
         });
+        cleanupCallback();
       })
       .on("error", (error) => {
         reject({
           success: false,
           message: `Error downloading: ${error.message}`,
         });
+        cleanupCallback();
       })
       .save(outputPath);
   });

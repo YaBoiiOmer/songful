@@ -14,6 +14,8 @@ const Stage = {
   THIRD: 1,
   FOURTH: 3,
   FIFTH: 5,
+  SIXTH: 15,
+  COOKED: 30,
 };
 
 const getFormattedStage = (stage: keyof typeof Stage) => {
@@ -28,13 +30,20 @@ const getFormattedStage = (stage: keyof typeof Stage) => {
       return <span className="text-yellow-400">Fourth</span>;
     case "FIFTH":
       return <span className="text-green-400">Fifth</span>;
+    case "SIXTH":
+      return <span className="text-purple-500">Sixth</span>;
+    case "COOKED":
+      return <span className="text-black font-semibold">BRUH YOU'RE COOKED 💀</span>;
   }
 };
 
 export default function Home() {
   const { songDetails, audioUrl } = useRandomSong();
   const handleDownload = async () => {
-    const result = await downloadSong("https://www.youtube.com/watch?v=4YrzJ9RZ9qY", "test");
+    const result = await downloadSong(
+      "https://www.youtube.com/watch?v=6ipqQlQrQH0&pp=ygUWd2hpdGUgbXVzdGFuZyBseXJ1aWNzIA%3D%3D",
+      "test"
+    );
     console.log(result);
   };
   return (
@@ -72,7 +81,7 @@ function CustomAudioPlayer({ audioUrl }: { audioUrl: string }) {
         audio.currentTime = Stage[stage];
         setIsPlaying(false);
       }
-      setProgress(Math.round(((audio.currentTime ?? 0) / Stage["FIFTH"]) * 100));
+      setProgress(Math.round(((audio.currentTime ?? 0) / Stage["COOKED"]) * 100));
     };
 
     audio.addEventListener("timeupdate", handleTimeUpdate);
