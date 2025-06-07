@@ -1,7 +1,7 @@
 import { APP_CONFIG, spotify } from "@/config";
 import ytsr from "@distube/ytsr";
 import fs from "fs";
-import { downloadSong } from "./app/(landing)/download-song";
+import { downloadSong } from "./lib/download-song";
 
 export interface Settings {
   spotifyPlaylistUrl: string;
@@ -77,6 +77,9 @@ export async function getSettings() {
 
 async function loadSongs(newPlaylist: boolean = false) {
   const settings = await getSettings();
+  if (!fs.existsSync(APP_CONFIG.outputDir)) {
+    fs.mkdirSync(APP_CONFIG.outputDir, { recursive: true });
+  }
   if (!newPlaylist && fs.existsSync(APP_CONFIG.songsPath)) {
     console.log("Loading songs from file:", APP_CONFIG.songsPath);
     const songsFile = fs.readFileSync(APP_CONFIG.songsPath, "utf8");
@@ -124,14 +127,14 @@ async function loadSongs(newPlaylist: boolean = false) {
   return songs.filter((song) => song !== undefined);
 }
 
-export async function getSongs() {
-  if (!songs) {
+export async function getSongs(forceLoad: boolean = false) {
+  if (!songs || forceLoad) {
     songs = await loadSongs();
   }
   return songs;
 }
 
 export async function getRandomSong() {
-  const songs = await getSongs();
+  const songs = await getSongs(true);
   return songs[Math.floor(Math.random() * songs.length)];
 }

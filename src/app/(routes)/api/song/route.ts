@@ -17,16 +17,21 @@ export async function GET(request: NextRequest) {
     songPath = song.filePath;
     if (fs.existsSync(songPath)) {
       const stat = fs.statSync(songPath);
+
+      const base64Title = Buffer.from(song.name).toString("base64");
+      const base64Artist = Buffer.from(song.artists.join(", ")).toString("base64");
+
       const fileStream = fs.createReadStream(songPath);
-      return new NextResponse(fileStream as any, {
+      const headers = {
         headers: {
           "Content-Type": "audio/mpeg",
           "Content-Length": stat.size.toString(),
-          "X-Song-Title": song.name,
-          "X-Song-Artist": song.artists.join(", "),
+          "X-Song-Title": base64Title,
+          "X-Song-Artist": base64Artist,
           "X-Spotify-Url": song.url,
         },
-      });
+      };
+      return new NextResponse(fileStream as any, headers);
     }
     attempt++;
   }

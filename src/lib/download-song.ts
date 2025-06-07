@@ -32,7 +32,7 @@ async function downloadFullAudioToTempFile(url: string): Promise<[string, () => 
 // Helper: Find first sound timestamp using silencedetect
 async function getFirstSoundTimestamp(filePath: string): Promise<number> {
   return new Promise((resolve, reject) => {
-    const ffmpegArgs = ["-i", filePath, "-af", "silencedetect=d=0.05", "-f", "null", "-"];
+    const ffmpegArgs = ["-i", filePath, "-af", "silencedetect=d=0.08:n=-25dB", "-f", "null", "-"];
     const ffmpegProc = spawn("ffmpeg", ffmpegArgs);
     let stderr = "";
 
@@ -41,9 +41,9 @@ async function getFirstSoundTimestamp(filePath: string): Promise<number> {
     });
 
     ffmpegProc.on("close", () => {
-      const match = stderr.match(/silence_end: ([\d.]+)/);
-      if (match) {
-        resolve(parseFloat(match[1]));
+      const silenceEndMatch = stderr.match(/silence_end: ([\d.]+)/);
+      if (silenceEndMatch && parseFloat(silenceEndMatch[1]) < 10) {
+        resolve(parseFloat(silenceEndMatch[1]));
       } else {
         resolve(0);
       }
@@ -54,16 +54,15 @@ async function getFirstSoundTimestamp(filePath: string): Promise<number> {
 
 export async function downloadSong(url: string, title: string): Promise<DownloadSongResult> {
   const info = await ytdl.getBasicInfo(url);
-  const filename = info.videoDetails.title.replace(/['"|/()]/g, "");
+  const filename = info.videoDetails.title.replace(/['"|:/()]/g, "");
   const outputPath = `${APP_CONFIG.outputDir}/${filename}.mp3`;
 
   const [audioPath, cleanupCallback] = await downloadFullAudioToTempFile(url);
   const startTime = await getFirstSoundTimestamp(audioPath);
-  console.log("First sound timestamp:", startTime, outputPath);
   return new Promise<DownloadSongResult>((resolve, reject) => {
     ffmpeg(audioPath)
       .audioCodec("libmp3lame")
-      .setStartTime(startTime > 40 ? 0 : startTime)
+      .setStartTime(startTime)
       .duration(APP_CONFIG.songDuration)
       .format("mp3")
       .on("end", () => {
