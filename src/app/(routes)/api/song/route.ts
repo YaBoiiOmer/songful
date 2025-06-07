@@ -28,7 +28,8 @@ export async function GET(request: NextRequest) {
           "Content-Length": stat.size.toString(),
           "X-Song-Title": base64Title,
           "X-Song-Artist": base64Artist,
-          "X-Spotify-Url": song.url,
+          "X-Youtube-Url": song.url,
+          "X-Spotify-Track-Id": song.spotifyTrackId,
         },
       };
       return new NextResponse(fileStream as any, headers);

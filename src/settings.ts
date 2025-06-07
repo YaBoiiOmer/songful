@@ -13,6 +13,7 @@ export interface Song {
   album: string;
   url: string;
   filePath: string;
+  spotifyTrackId: string;
 }
 
 export interface DownloadedSong extends Song {
@@ -113,6 +114,7 @@ async function loadSongs(newPlaylist: boolean = false) {
           album: item.track.album.name,
           url: video.url,
           filePath: result.filePath,
+          spotifyTrackId: item.track.id,
         };
       } catch (error) {
         console.error("Failed to download song:", error);

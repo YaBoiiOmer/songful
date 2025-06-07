@@ -22,7 +22,6 @@ export function SearchBar({ onGuess }: SearchBarProps) {
       const response = await fetch("/api/songs");
       const songs = await response.json();
       setSongs(songs);
-      console.log(songs);
     };
     fetchSongs();
   }, []);

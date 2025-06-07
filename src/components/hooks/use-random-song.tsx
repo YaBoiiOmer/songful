@@ -1,10 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
 
-type SongDetails = {
+export type SongDetails = {
   title: string;
   artist: string;
   url: string;
+  spotifyTrackId: string;
 };
 
 export default function useRandomSong() {
@@ -23,7 +24,8 @@ export default function useRandomSong() {
         setSongDetails({
           title: title,
           artist: artists,
-          url: headers.get("X-Spotify-Url") || "",
+          url: headers.get("X-Youtube-Url") || "",
+          spotifyTrackId: headers.get("X-Spotify-Track-Id") || "",
         });
       }
       const url = URL.createObjectURL(songBlob);
