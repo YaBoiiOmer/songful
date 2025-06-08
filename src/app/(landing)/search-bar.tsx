@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState, useRef, useEffect } from "react";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -11,12 +11,12 @@ interface SearchBarProps {
 }
 
 export function SearchBar({ onGuess }: SearchBarProps) {
-  const [open, setOpen] = React.useState(false);
-  const [value, setValue] = React.useState("");
-  const [songs, setSongs] = React.useState<Song[]>([]);
-  const ref = React.useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState("");
+  const [songs, setSongs] = useState<Song[]>([]);
+  const ref = useRef<HTMLDivElement>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchSongs = async () => {
       const response = await fetch("/api/songs");
       const songs = await response.json();
@@ -46,7 +46,7 @@ export function SearchBar({ onGuess }: SearchBarProps) {
                 songs.map((song) => (
                   <CommandItem
                     key={song?.url}
-                    value={song?.name + " - " + song?.artists.join(", ")}
+                    value={song?.name + " " + song?.artists.join(" ")}
                     onSelect={(currentValue) => {
                       setValue(currentValue === value ? "" : currentValue);
                       setOpen(false);
