@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Song } from "@/settings";
+import { Dialog } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent } from "@/components/ui/dropdown-menu";
 
 interface SearchBarProps {
   onGuess: (guess: Song) => void;
@@ -27,24 +29,16 @@ export function SearchBar({ onGuess }: SearchBarProps) {
   }, []);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-full min-w-full justify-center relative"
-          disabled={songs.length === 0}
-        >
-          {value ? songs.find((song) => song?.name === value)?.name : "Guess a song..."}
-          <ChevronsUpDown className="opacity-50 absolute right-2" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-full min-w-full p-0">
-        <Command>
-          <CommandInput placeholder="Search song..." className="h-9" />
-          <CommandList>
-            <CommandEmpty>No song found.</CommandEmpty>
+    <div className="relative w-full">
+      <Command className="outline">
+        <CommandInput
+          placeholder="Type a command or search..."
+          onFocus={() => setOpen(true)}
+          onBlur={() => setOpen(false)}
+        />
+        {open && (
+          <CommandList className="absolute rounded-sm top-10 z-10 w-full outline bg-card max-h-[300px]">
+            <CommandEmpty>No results found.</CommandEmpty>
             <CommandGroup>
               {songs.length > 0 &&
                 songs.map((song) => (
@@ -63,8 +57,8 @@ export function SearchBar({ onGuess }: SearchBarProps) {
                 ))}
             </CommandGroup>
           </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+        )}
+      </Command>
+    </div>
   );
 }
