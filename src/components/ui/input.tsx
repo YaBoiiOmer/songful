@@ -12,8 +12,8 @@ function Input({ className, type, variant = "default", ...props }: InputProps) {
   const variantClasses = {
     default: "border-input bg-transparent focus-visible:border-ring focus-visible:ring-ring/50",
     green:
-      "border-green-500 bg-green-500 dark:bg-green-500/20 focus-visible:border-green-600 focus-visible:ring-green-200",
-    red: "border-red-500 bg-red-500 dark:bg-red-500/20 focus-visible:border-red-600 focus-visible:ring-red-200",
+      "border-green-500 bg-green-500 dark:bg-green-500/20 text-green-500 focus-visible:border-green-600 focus-visible:ring-green-200",
+    red: "border-red-500 bg-red-500 dark:bg-red-500/20 text-red-500 focus-visible:border-red-600 focus-visible:ring-red-200",
     skip: "border-white bg-gray-500 dark:bg-gray-300/20 focus-visible:border-gray-600 focus-visible:ring-gray-200",
   };
 

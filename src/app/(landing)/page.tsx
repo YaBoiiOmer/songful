@@ -90,18 +90,20 @@ export default function Home() {
 }
 
 function GuessBoxes({ guesses }: { guesses: Guess[] }) {
+  const formatGuess = (guess: Guess | undefined, index: number) => {
+    if (!guess) return <Input variant="default" key={index} value={""} className="text-center" disabled />;
+    if (guess.isCorrect) {
+      return <Input variant="green" key={index} value={`✓ ${guess.name}`} className="text-center" disabled />;
+    } else if (guess.name === "SKIP") {
+      return <Input variant="skip" key={index} value={`→ ${guess.name}`} className="text-center" disabled />;
+    }
+    return <Input variant="red" key={index} value={`✗ ${guess.name}`} className="text-center" disabled />;
+  };
+
   return (
     <div className="space-y-2 w-full">
       {Array.from({ length: 7 }).map((_, index) => {
-        const variant = () => {
-          if (!guesses[index]) return "default";
-          else if (guesses[index]?.name === "SKIP") return "skip";
-          else if (guesses[index]?.isCorrect) return "green";
-          else return "red";
-        };
-        return (
-          <Input variant={variant()} key={index} value={guesses[index]?.name || ""} className="text-center" disabled />
-        );
+        return formatGuess(guesses[index], index);
       })}
     </div>
   );

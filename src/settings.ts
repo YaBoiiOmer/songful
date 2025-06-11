@@ -104,7 +104,7 @@ async function loadSongs(newPlaylist: boolean = false) {
       try {
         const result = await downloadSong(video.url, item.track.name);
         if (!result.success) {
-          console.error("Failed to download song:", result.message);
+          console.error("Unable to download song:", result.message);
           songsFailed++;
           return undefined;
         }
@@ -117,16 +117,20 @@ async function loadSongs(newPlaylist: boolean = false) {
           spotifyTrackId: item.track.id,
         };
       } catch (error) {
-        console.error("Failed to download song:", error);
+        console.error("An error occurred while downloading song:", error);
         songsFailed++;
         return undefined;
       }
     })
   );
 
-  fs.writeFileSync(APP_CONFIG.songsPath, JSON.stringify(songs, null, 2));
+  const filteredSongs = songs
+    .filter((song) => song !== undefined && song !== null)
+    .filter((song, index, self) => index === self.findIndex((s) => s?.spotifyTrackId === song?.spotifyTrackId));
 
-  return songs.filter((song) => song !== undefined);
+  fs.writeFileSync(APP_CONFIG.songsPath, JSON.stringify(filteredSongs, null, 2));
+
+  return filteredSongs;
 }
 
 export async function getSongs(forceLoad: boolean = false) {

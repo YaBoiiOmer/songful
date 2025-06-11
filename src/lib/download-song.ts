@@ -1,6 +1,6 @@
 "use server";
 
-import ytdl from "@distube/ytdl-core";
+import ytdl from "@nuclearplayer/ytdl-core";
 import ffmpeg from "fluent-ffmpeg";
 import { APP_CONFIG } from "@/config";
 import { spawn } from "child_process";
