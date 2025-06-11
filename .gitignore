@@ -40,5 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-settings.json
+*.mp3
 songs/
+settings.json
