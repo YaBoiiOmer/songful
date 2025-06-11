@@ -5,6 +5,7 @@ import ffmpeg from "fluent-ffmpeg";
 import { APP_CONFIG } from "@/config";
 import { spawn } from "child_process";
 import tmp from "tmp";
+import { uploadSong } from "./cloudinary";
 
 type DownloadSongResult = {
   success: boolean;
@@ -52,7 +53,7 @@ async function getFirstSoundTimestamp(filePath: string): Promise<number> {
   });
 }
 
-export async function downloadSong(url: string, title: string): Promise<DownloadSongResult> {
+export async function downloadSong(url: string, playlistId: string): Promise<DownloadSongResult> {
   const info = await ytdl.getBasicInfo(url);
   const filename = info.videoDetails.title.replace(/['"|:/()]/g, "");
   const outputPath = `${APP_CONFIG.outputDir}/${filename}.mp3`;
@@ -82,6 +83,6 @@ export async function downloadSong(url: string, title: string): Promise<Download
         });
         cleanupCallback();
       })
-      .save(outputPath);
+      .pipe(uploadSong(playlistId, filename));
   });
 }

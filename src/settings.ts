@@ -102,7 +102,7 @@ async function loadSongs(newPlaylist: boolean = false) {
       const search = await ytsr(searchQuery, { type: "video", limit: 1 });
       const video = search.items[0];
       try {
-        const result = await downloadSong(video.url, item.track.name);
+        const result = await downloadSong(video.url, playlistId);
         if (!result.success) {
           console.error("Unable to download song:", result.message);
           songsFailed++;
