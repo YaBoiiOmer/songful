@@ -80,9 +80,6 @@ export default function Home() {
           />
           <CustomAudioPlayer audioUrl={audioUrl} onStageSkip={handleStageSkip} stage={stage} setStage={setStage} />
         </CardContent>
-        <CardFooter className="flex items-center justify-center text-muted-foreground/30">
-          {chosenSong ? `${chosenSong.title} - ${chosenSong.artist}` : "Loading..."}
-        </CardFooter>
       </Card>
       {isGameOver && <GameOver song={chosenSong} guesses={guesses} stage={stage} />}
     </div>
