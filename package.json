@@ -11,8 +11,8 @@
   "dependencies": {
     "@distube/ytsr": "^2.0.4",
     "@hookform/resolvers": "^5.0.1",
-    "@libsql/client": "^0.15.9",
     "@nuclearplayer/ytdl-core": "^4.16.13",
+    "@prisma/client": "^6.9.0",
     "@radix-ui/react-dialog": "^1.1.14",
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-popover": "^1.1.14",
@@ -25,7 +25,6 @@
     "cloudinary": "^2.6.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
-    "drizzle-orm": "^0.44.2",
     "fluent-ffmpeg": "^2.1.3",
     "lucide-react": "^0.511.0",
     "next": "15.3.2",
@@ -45,11 +44,15 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/tmp": "^0.2.6",
-    "drizzle-kit": "^0.31.1",
     "eslint": "^9",
     "eslint-config-next": "15.3.2",
+    "prisma": "^6.9.0",
     "tailwindcss": "^4",
+    "tsx": "^4.20.3",
     "tw-animate-css": "^1.3.0",
     "typescript": "^5"
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma"
   }
 }

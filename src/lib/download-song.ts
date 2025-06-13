@@ -6,14 +6,19 @@ import { APP_CONFIG } from "@/config";
 import { spawn } from "child_process";
 import tmp from "tmp";
 import { uploadSong } from "./cloudinary";
+import { DownloadSong } from "@/types/song";
+import ytsr from "@distube/ytsr";
 
-type DownloadSongResult = {
-  success: boolean;
-  message: string;
-  title: string | undefined;
-  author: string | undefined;
-  filePath: string;
-};
+type DownloadSongResult =
+  | { success: true; cloudinaryUrl: string; youtubeUrl: string }
+  | { success: false; error: string };
+
+async function searchYoutubeSong(song: DownloadSong) {
+  const searchQuery = `${song.artists.join(", ")} - ${song.name} Lyrics Audio`;
+  const search = await ytsr(searchQuery, { type: "video", limit: 1 });
+  const video = search.items[0];
+  return video;
+}
 
 async function downloadFullAudioToTempFile(url: string): Promise<[string, () => void]> {
   return new Promise((resolve, reject) => {
@@ -53,36 +58,44 @@ async function getFirstSoundTimestamp(filePath: string): Promise<number> {
   });
 }
 
-export async function downloadSong(url: string, playlistId: string): Promise<DownloadSongResult> {
-  const info = await ytdl.getBasicInfo(url);
-  const filename = info.videoDetails.title.replace(/['"|:/()]/g, "");
-  const outputPath = `${APP_CONFIG.outputDir}/${filename}.mp3`;
+export async function downloadSong(song: DownloadSong): Promise<DownloadSongResult> {
+  const youtubeSearch = await searchYoutubeSong(song);
+  const [tempFilePath, cleanTempFile] = await downloadFullAudioToTempFile(youtubeSearch.url);
+  const startTime = await getFirstSoundTimestamp(tempFilePath);
 
-  const [audioPath, cleanupCallback] = await downloadFullAudioToTempFile(url);
-  const startTime = await getFirstSoundTimestamp(audioPath);
-  return new Promise<DownloadSongResult>((resolve, reject) => {
-    ffmpeg(audioPath)
+  return new Promise((resolve, reject) => {
+    const { uploadStream, promise } = uploadSong();
+
+    ffmpeg(tempFilePath)
       .audioCodec("libmp3lame")
       .setStartTime(startTime)
       .duration(APP_CONFIG.songDuration)
       .format("mp3")
       .on("end", () => {
-        resolve({
-          success: true,
-          message: `Downloaded '${info.videoDetails.title}' by ${info.videoDetails.author.name} finished.`,
-          title: info.videoDetails.title,
-          author: info.videoDetails.author.name,
-          filePath: outputPath,
-        });
-        cleanupCallback();
+        promise
+          .then((result) => {
+            resolve({
+              success: true,
+              cloudinaryUrl: result.secure_url,
+              youtubeUrl: youtubeSearch.url,
+            });
+            cleanTempFile();
+          })
+          .catch((error) => {
+            reject({
+              success: false,
+              error: `Error uploading to Cloudinary: ${error.message}`,
+            });
+            cleanTempFile();
+          });
       })
       .on("error", (error) => {
         reject({
           success: false,
-          message: `Error downloading: ${error.message}`,
+          error: `Error downloading: ${error.message}`,
         });
-        cleanupCallback();
+        cleanTempFile();
       })
-      .pipe(uploadSong(playlistId, filename));
+      .pipe(uploadStream);
   });
 }

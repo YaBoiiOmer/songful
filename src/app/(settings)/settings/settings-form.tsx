@@ -5,9 +5,8 @@ import { useForm } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Settings } from "@/settings";
 import { toast } from "sonner";
-import { saveSettingsAction } from "./setttings.action";
+import { updatePlaylistUrlAction } from "./setttings.action";
 import z from "zod";
 import { useState } from "react";
 import DownloadProgressDialog from "./download-dialog";
@@ -18,31 +17,23 @@ const SettingsFormSchema = z.object({
 
 export type SettingsFormSchema = z.infer<typeof SettingsFormSchema>;
 
-interface SettingsFormProps {
-  settings: Settings;
-}
-
-export function SettingsForm({ settings }: SettingsFormProps) {
+export function SettingsForm() {
   const [isDownloadDialogOpen, setIsDownloadDialogOpen] = useState(false);
   const form = useForm<SettingsFormSchema>({
     resolver: zodResolver(SettingsFormSchema),
     defaultValues: {
-      spotifyPlaylistUrl: settings.spotifyPlaylistUrl,
+      spotifyPlaylistUrl: "",
     },
   });
 
   const onSubmit = async (data: SettingsFormSchema) => {
-    const res = await saveSettingsAction(data);
-    if (res.success) {
-      toast.success("Settings saved successfully");
-      if (res.newPlaylist) {
-        setTimeout(() => {
-          toast.success(`Downloaded ${res.songsLoaded} songs`);
-        }, 1000);
+    updatePlaylistUrlAction(data).then((res) => {
+      if (res.success) {
+        toast.success("Settings saved successfully");
+      } else {
+        toast.error(res.error);
       }
-    } else {
-      toast.error(res.error);
-    }
+    });
   };
 
   return (
