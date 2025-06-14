@@ -10,10 +10,8 @@ export async function middleware(request: NextRequest) {
     if (!settings.spotifyPlaylistUrl) {
       return NextResponse.redirect(new URL("/settings", request.url));
     }
-
     return NextResponse.next();
   } catch (error) {
-    console.error("Error fetching settings:", error);
     return NextResponse.next();
   }
 }

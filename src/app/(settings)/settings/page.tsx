@@ -13,7 +13,7 @@ export default async function SettingsPage() {
       </Link>
       <Card className="max-w-md w-full">
         <CardHeader>
-          <CardTitle className="text-center">Welcome to Song Game</CardTitle>
+          <CardTitle className="text-center text-xl">Songful Settings</CardTitle>
           <p className="text-center text-sm text-muted-foreground">Please configure your settings to continue</p>
         </CardHeader>
         <CardContent>

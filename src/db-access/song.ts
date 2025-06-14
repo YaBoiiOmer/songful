@@ -4,10 +4,13 @@ import db from "../db";
 
 const includeArtists = { include: { artists: { include: { artist: true } } } };
 
-const mapArtistToSong = (song: any) => ({
-  ...song,
-  artists: song?.artists.map((rel: any) => rel.artist),
-});
+const mapArtistToSong = (song: any | null) => {
+  if (!song) return null;
+  return {
+    ...song,
+    artists: song.artists.map((rel: any) => rel.artist),
+  };
+};
 
 export async function createSong(song: CreateSong): Promise<Song> {
   const createdSong = await db.song.create({

@@ -8,8 +8,6 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { updatePlaylistUrlAction } from "./setttings.action";
 import z from "zod";
-import { useState } from "react";
-import DownloadProgressDialog from "./download-dialog";
 
 const SettingsFormSchema = z.object({
   spotifyPlaylistUrl: z.string().url("Please enter a valid Spotify playlist URL"),
@@ -18,18 +16,17 @@ const SettingsFormSchema = z.object({
 export type SettingsFormSchema = z.infer<typeof SettingsFormSchema>;
 
 export function SettingsForm() {
-  const [isDownloadDialogOpen, setIsDownloadDialogOpen] = useState(false);
   const form = useForm<SettingsFormSchema>({
     resolver: zodResolver(SettingsFormSchema),
     defaultValues: {
-      spotifyPlaylistUrl: "",
+      spotifyPlaylistUrl: "https://open.spotify.com/playlist/0EBNZWz1zMfEt1h6aIr5mQ?si=c6408babd5e64fd8",
     },
   });
 
   const onSubmit = async (data: SettingsFormSchema) => {
     updatePlaylistUrlAction(data).then((res) => {
       if (res.success) {
-        toast.success("Settings saved successfully");
+        toast.success(res.message);
       } else {
         toast.error(res.error);
       }
@@ -38,7 +35,6 @@ export function SettingsForm() {
 
   return (
     <>
-      <DownloadProgressDialog isOpen={isDownloadDialogOpen} onOpenChange={setIsDownloadDialogOpen} />
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <FormField

@@ -8,6 +8,6 @@ export type Song = {
   addedAt: Date;
   artists: Artist[];
 };
-
+export type PreUploadedSong = Omit<Song, "youtubeUrl" | "cloudinaryUrl" | "addedAt">;
 export type CreateSong = Omit<Song, "addedAt">;
 export type DownloadSong = Omit<Song, "youtubeUrl" | "cloudinaryUrl" | "addedAt">;

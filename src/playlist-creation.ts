@@ -4,67 +4,79 @@ import { createSongUseCase, getSongByIdUseCase } from "./use-cases/song";
 import { Track } from "@spotify/web-api-ts-sdk";
 import { downloadSong } from "./lib/download-song";
 import { Artist } from "./types/artist";
-import { Song } from "./types/song";
+import { PreUploadedSong, Song } from "./types/song";
+import { Playlist } from "./types/playlist";
 
 export async function updatePlaylist({ url }: { url: string }) {
-  const playlistId = url.split("https://open.spotify.com/playlist/")[1];
+  const playlistId = url.split("https://open.spotify.com/playlist/")[1].split("?")[0];
   if (!playlistId) {
     throw new Error("Invalid playlist URL");
   }
-  console.log("playlistId", playlistId);
   const playlist = await getPlaylistByIdUseCase(playlistId);
   if (!playlist) {
-    console.log("playlist not found in database, creating playlist");
-    await handlePlaylistCreation(playlistId);
+    return await handlePlaylistCreation(playlistId);
   }
-  console.log("playlist found in database!");
+  return playlist;
 }
 
-export async function handlePlaylistCreation(playlistId: string) {
-  new Promise(async (resolve, reject) => {
-    const playlist = await spotify.playlists.getPlaylist(playlistId).catch((error) => {
-      reject(error);
-    });
-    if (!playlist) return reject(new Error("Playlist not found"));
+export async function handlePlaylistCreation(playlistId: string): Promise<Partial<Playlist>> {
+  try {
+    const playlist = await spotify.playlists.getPlaylist(playlistId);
+    if (!playlist) {
+      throw new Error("Playlist not found");
+    }
+
+    console.log("-fetched playlist from spotify successfully-");
     const songs = playlist.tracks.items.map((item) => item.track);
     const { existingSongs, missingSongs } = await sortSongs(songs);
-    const newSongs = (await Promise.all(missingSongs.map(downloadMissingSong))).filter(
-      (song) => song !== null
-    ) as Song[];
-    const allSongs = [...existingSongs, ...newSongs];
-    if (allSongs.length === 0) {
-      reject(new Error("No songs found to create playlist with"));
+    console.log("existingSongs:", existingSongs);
+    console.log("missingSongs:", missingSongs);
+    const downloadedSongs = await Promise.allSettled(missingSongs.map(downloadMissingSong)).then(getSettledResults);
+    console.log("---downloadedSongs---", downloadedSongs);
+
+    const playlistSongs = [...existingSongs, ...downloadedSongs];
+
+    if (playlistSongs.length === 0) {
+      throw new Error("No songs found to create playlist with");
     }
+
     const createdPlaylist = await createPlaylistUseCase({
       id: playlistId,
       name: playlist.name,
-      songs: allSongs,
+      songs: playlistSongs,
     });
-    resolve(createdPlaylist);
-  });
+    return createdPlaylist;
+  } catch (error) {
+    throw error;
+  }
 }
+
 async function sortSongs(songs: Track[]) {
   const existingSongs: Song[] = [];
-  const missingSongs = await Promise.allSettled(
-    songs.map(async (song) => {
-      const findSong = await getSongByIdUseCase(song.id);
-      if (findSong) {
-        console.log("---found song", song.id);
-        existingSongs.push(findSong);
-        return null;
-      }
-      const artists = song.artists.map((artist) => ({ id: artist.id, name: artist.name } as Artist));
-      return {
-        id: song.id,
-        name: song.name,
-        artists,
-      };
-    })
-  ).then((songs) => songs.filter((song) => song !== null));
+  const sortSong = async (song: Track) => {
+    const songQuery = await getSongByIdUseCase(song.id);
+    if (songQuery) {
+      existingSongs.push(songQuery);
+      return null;
+    }
+    const artists = song.artists.map((artist) => ({ id: artist.id, name: artist.name } as Artist));
+    return {
+      id: song.id,
+      name: song.name,
+      artists,
+    };
+  };
+  const sortSongPromises = songs.map(sortSong);
+  const missingSongs: PreUploadedSong[] = await Promise.allSettled(sortSongPromises).then((missingSongResults) =>
+    missingSongResults
+      .filter((result) => result.status === "fulfilled")
+      .map((result) => result.value)
+      .filter((song) => song !== null)
+  );
   return { existingSongs, missingSongs };
 }
 
-async function downloadMissingSong(song: { id: string; name: string; artists: Artist[] }) {
+async function downloadMissingSong(song: PreUploadedSong) {
   try {
     const result = await downloadSong(song);
     if (result.success) {
@@ -83,4 +95,11 @@ async function downloadMissingSong(song: { id: string; name: string; artists: Ar
     console.error("Error downloading song:", err);
     return null;
   }
+}
+
+function getSettledResults<T>(results: PromiseSettledResult<T | null>[]) {
+  return results
+    .filter((result) => result.status === "fulfilled")
+    .map((result) => result.value)
+    .filter((obj) => obj !== null);
 }

@@ -7,18 +7,11 @@ import { spawn } from "child_process";
 import tmp from "tmp";
 import { uploadSong } from "./cloudinary";
 import { DownloadSong } from "@/types/song";
-import ytsr from "@distube/ytsr";
+import { searchYoutubeSong } from "./youtube";
 
 type DownloadSongResult =
   | { success: true; cloudinaryUrl: string; youtubeUrl: string }
   | { success: false; error: string };
-
-async function searchYoutubeSong(song: DownloadSong) {
-  const searchQuery = `${song.artists.join(", ")} - ${song.name} Lyrics Audio`;
-  const search = await ytsr(searchQuery, { type: "video", limit: 1 });
-  const video = search.items[0];
-  return video;
-}
 
 async function downloadFullAudioToTempFile(url: string): Promise<[string, () => void]> {
   return new Promise((resolve, reject) => {
@@ -59,8 +52,11 @@ async function getFirstSoundTimestamp(filePath: string): Promise<number> {
 }
 
 export async function downloadSong(song: DownloadSong): Promise<DownloadSongResult> {
-  const youtubeSearch = await searchYoutubeSong(song);
-  const [tempFilePath, cleanTempFile] = await downloadFullAudioToTempFile(youtubeSearch.url);
+  const songUrl = await searchYoutubeSong(song);
+  if (!songUrl) {
+    return { success: false, error: "No song found on youtube" };
+  }
+  const [tempFilePath, cleanTempFile] = await downloadFullAudioToTempFile(songUrl);
   const startTime = await getFirstSoundTimestamp(tempFilePath);
 
   return new Promise((resolve, reject) => {
@@ -77,7 +73,7 @@ export async function downloadSong(song: DownloadSong): Promise<DownloadSongResu
             resolve({
               success: true,
               cloudinaryUrl: result.secure_url,
-              youtubeUrl: youtubeSearch.url,
+              youtubeUrl: songUrl,
             });
             cleanTempFile();
           })
