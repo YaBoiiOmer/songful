@@ -4,8 +4,6 @@ cloudinary.config({
 });
 
 export function uploadSong() {
-  console.log("uploading song to cloudinary");
-
   const options: UploadApiOptions = {
     resource_type: "video",
     overwrite: true,

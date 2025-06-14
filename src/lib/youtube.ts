@@ -14,7 +14,6 @@ Returns the first video url that matches the query.
 
 export async function searchYoutubeSong(song: DownloadSong) {
   const query = `${song.artists.map((artist) => artist.name).join(", ")} - ${song.name} Lyrics Audio`;
-  console.log("Looking for song:", query);
   const response = await ytClient.search.list({
     part: ["id"],
     type: ["video"],
