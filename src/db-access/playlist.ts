@@ -16,8 +16,15 @@ export async function createPlaylist(data: CreatePlaylist): Promise<Partial<Play
   });
 }
 
-export async function getPlaylistById(id: Playlist["id"]): Promise<Partial<Playlist> | null> {
+export async function getPlaylistById(id: Playlist["id"]): Promise<Playlist | null> {
   return await db.playlist.findUnique({
     where: { id },
+  });
+}
+
+export async function getPlaylists(): Promise<Playlist[]> {
+  return await db.playlist.findMany({
+    orderBy: { addedAt: "desc" },
+    take: 10,
   });
 }

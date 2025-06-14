@@ -43,6 +43,7 @@ export async function handlePlaylistCreation(playlistId: string): Promise<Partia
     const createdPlaylist = await createPlaylistUseCase({
       id: playlistId,
       name: playlist.name,
+      image: playlist.images[0]?.url ?? "",
       songs: playlistSongs,
     });
     return createdPlaylist;
