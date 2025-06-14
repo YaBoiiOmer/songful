@@ -1,6 +1,7 @@
 import { CreateSong, Song } from "@/types/song";
 import { Artist } from "@/types/artist";
 import db from "../db";
+import { Playlist } from "@/types/playlist";
 
 const includeArtists = { include: { artists: { include: { artist: true } } } };
 
@@ -44,6 +45,15 @@ export async function getSongById(id: Song["id"]): Promise<Song | null> {
   });
 
   return mapArtistToSong(query);
+}
+
+export async function getSongsByPlaylistId(playlistId: Playlist["id"]): Promise<Song[]> {
+  const query = await db.songPlaylist.findMany({
+    where: { playlistId },
+    include: { song: includeArtists },
+  });
+
+  return query.map((song) => mapArtistToSong(song.song));
 }
 
 export async function getAllSongs(): Promise<Song[]> {

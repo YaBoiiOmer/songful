@@ -2,33 +2,27 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Check } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatSongName } from "@/lib/utils";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Song } from "@/settings";
+import { Song } from "@/types/song";
 
 interface SearchBarProps {
   onGuess: (guess: Song) => void;
+  songs: Song[];
 }
 
-export function SearchBar({ onGuess }: SearchBarProps) {
+export function SearchBar({ onGuess, songs }: SearchBarProps) {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState("");
-  const [songs, setSongs] = useState<Song[]>([]);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const fetchSongs = async () => {
-      const response = await fetch("/api/songs");
-      const songs = await response.json();
-      setSongs(songs);
-    };
-
     const onInteractOutside = (event: MouseEvent) => {
       if (ref.current && !ref.current.contains(event.target as Node)) {
         setOpen(false);
       }
     };
-    fetchSongs();
+    // fetchSongs();
 
     document.addEventListener("mousedown", onInteractOutside);
     return () => document.removeEventListener("mousedown", onInteractOutside);
@@ -45,15 +39,15 @@ export function SearchBar({ onGuess }: SearchBarProps) {
               {songs.length > 0 &&
                 songs.map((song) => (
                   <CommandItem
-                    key={song?.url}
-                    value={song?.name + " " + song?.artists.join(" ")}
+                    key={song?.id}
+                    value={formatSongName(song)}
                     onSelect={(currentValue) => {
                       setValue(currentValue === value ? "" : currentValue);
                       setOpen(false);
                       onGuess(song);
                     }}
                   >
-                    {song?.name} - {song?.artists.join(", ")}
+                    {formatSongName(song)}
                     <Check className={cn("ml-auto", value === song?.name ? "opacity-100" : "opacity-0")} />
                   </CommandItem>
                 ))}

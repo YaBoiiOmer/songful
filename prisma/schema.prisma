@@ -55,5 +55,5 @@ model SongArtist {
   artist   Artist @relation(fields: [artistId], references: [id])
 
   @@id([songId, artistId])
-  @@unique([artistId])
+  @@unique([songId, artistId])
 }
