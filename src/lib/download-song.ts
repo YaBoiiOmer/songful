@@ -7,7 +7,7 @@ import { spawn } from "child_process";
 import tmp from "tmp";
 import { uploadSong } from "./cloudinary";
 import { DownloadSong } from "@/types/song";
-import { searchYoutubeSong } from "./youtube";
+import { searchYoutubeSong, searchYoutubeSong_v2 } from "./youtube";
 
 type DownloadSongResult =
   | { success: true; cloudinaryUrl: string; youtubeUrl: string }
@@ -52,7 +52,7 @@ async function getFirstSoundTimestamp(filePath: string): Promise<number> {
 }
 
 export async function downloadSong(song: DownloadSong): Promise<DownloadSongResult> {
-  const songUrl = await searchYoutubeSong(song);
+  const songUrl = await searchYoutubeSong_v2(song);
   if (!songUrl) {
     return { success: false, error: "No song found on youtube" };
   }

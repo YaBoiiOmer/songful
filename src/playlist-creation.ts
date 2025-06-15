@@ -19,21 +19,35 @@ export async function updatePlaylist({ url }: { url: string }) {
   return playlist;
 }
 
+export async function getPlaylistItems(playlistId: string) {
+  const playlist = await spotify.playlists.getPlaylist(playlistId);
+  if (!playlist) {
+    throw new Error("Playlist not found");
+  }
+  const tracks = [];
+  let items = await spotify.playlists.getPlaylistItems(playlistId);
+  let nextQuery = "";
+  while (items.next) {
+    tracks.push(...items.items.map((item) => item.track));
+    items = await spotify.playlists.getPlaylistItems(playlistId);
+  }
+
+  return tracks;
+}
+
 export async function handlePlaylistCreation(playlistId: string): Promise<Partial<Playlist>> {
   try {
     const playlist = await spotify.playlists.getPlaylist(playlistId);
     if (!playlist) {
       throw new Error("Playlist not found");
     }
+    console.log("Playlist found:", playlist.name, "with", playlist.tracks.items.length, "songs");
 
-    console.log("-fetched playlist from spotify successfully-");
     const songs = playlist.tracks.items.map((item) => item.track);
     const { existingSongs, missingSongs } = await sortSongs(songs);
-    console.log("existingSongs:", existingSongs);
-    console.log("missingSongs:", missingSongs);
-    const downloadedSongs = await Promise.allSettled(missingSongs.map(downloadMissingSong)).then(getSettledResults);
-    console.log("---downloadedSongs---", downloadedSongs);
-
+    console.log("Expecting to download", missingSongs.length, "songs");
+    const downloadedSongs = await processBatch(missingSongs, downloadMissingSong, 15, 2000);
+    console.log(downloadedSongs);
     const playlistSongs = [...existingSongs, ...downloadedSongs];
 
     if (playlistSongs.length === 0) {
@@ -98,9 +112,54 @@ async function downloadMissingSong(song: PreUploadedSong) {
   }
 }
 
+async function processBatch<T, R>(
+  items: T[],
+  processor: (item: T) => Promise<R | null>,
+  batchSize: number = 3,
+  delayMs: number = 1000
+) {
+  const results: R[] = [];
+  console.log(`Processing ${items.length} items in batches of ${batchSize}`);
+
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize);
+    console.log(`Processing batch ${Math.floor(i / batchSize) + 1} of ${Math.ceil(items.length / batchSize)}`);
+
+    const batchResults = await Promise.allSettled(batch.map(processor));
+    const batchSuccesses = getSettledResults(batchResults);
+    results.push(...batchSuccesses);
+
+    console.log(`Batch complete. ${batchSuccesses.length}/${batch.length} items processed successfully`);
+
+    if (i + batchSize < items.length) {
+      console.log(`Waiting ${delayMs}ms before next batch...`);
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+
+  console.log(`All batches complete. Total successful items: ${results.length}/${items.length}`);
+  return results;
+}
+
 function getSettledResults<T>(results: PromiseSettledResult<T | null>[]) {
   return results
     .filter((result) => result.status === "fulfilled")
     .map((result) => result.value)
-    .filter((obj) => obj !== null);
+    .filter((obj) => obj !== null && obj !== undefined);
+}
+
+async function gatherSongs(playlistId: string): Promise<Track[]> {
+  const playlist = await spotify.playlists.getPlaylist(playlistId);
+  if (!playlist) {
+    throw new Error("Playlist not found");
+  }
+  let offset = 0;
+  let items = await spotify.playlists.getPlaylistItems(playlistId, undefined, undefined, undefined, offset);
+  const tracks = [...items.items.map((item) => item.track)];
+  while (items.next) {
+    offset += items.items.length;
+    items = await spotify.playlists.getPlaylistItems(playlistId, undefined, undefined, undefined, offset);
+    tracks.push(...items.items.map((item) => item.track));
+  }
+  return tracks;
 }
