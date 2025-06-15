@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { getStageColor, Stage } from "./stage";
 
 interface CustomAudioPlayerProps {
-  audioUrl: string | null;
+  audioUrl: string;
   onStageSkip?: (index: number) => void;
   stage: keyof typeof Stage;
   setStage: (stage: keyof typeof Stage) => void;
@@ -20,6 +20,7 @@ export function CustomAudioPlayer({ audioUrl, onStageSkip, stage, setStage }: Cu
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
+    audio.src = audioUrl;
 
     const handleTimeUpdate = () => {
       if (audio.currentTime >= Stage[stage]) {
@@ -58,7 +59,7 @@ export function CustomAudioPlayer({ audioUrl, onStageSkip, stage, setStage }: Cu
 
   return (
     <div className="flex flex-col items-center justify-center w-full">
-      {isReady && <audio ref={audioRef} src={audioUrl} />}
+      {isReady && <audio ref={audioRef} />}
       <div className="space-y-2 w-full flex flex-col items-center justify-center">
         <div className="flex gap-2">
           <Button onClick={handlePlay} disabled={isPlaying}>

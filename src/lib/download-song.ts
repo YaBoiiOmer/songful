@@ -88,7 +88,7 @@ export async function downloadSong(song: DownloadSong): Promise<DownloadSongResu
       .on("error", (error) => {
         reject({
           success: false,
-          error: `Error downloading: ${error.message}`,
+          error: `Error downloading: ${error.message}, song: ${song.name}`,
         });
         cleanTempFile();
       })

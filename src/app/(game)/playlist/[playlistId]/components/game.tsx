@@ -24,7 +24,7 @@ interface GameComponentProps {
 }
 
 export default function GameComponent({ playlist, songs }: GameComponentProps) {
-  const randomSong = songs[Math.floor(Math.random() * songs.length)];
+  const [randomSong, setRandomSong] = useState<Song>(songs[Math.floor(Math.random() * songs.length)]);
   const [stage, setStage] = useState<keyof typeof Stage>("FIRST");
   const [guesses, setGuesses] = useState<Guess[]>([]);
   const [isGameOver, setIsGameOver] = useState(false);
@@ -94,7 +94,7 @@ export default function GameComponent({ playlist, songs }: GameComponentProps) {
           />
         </CardContent>
       </Card>
-      {isGameOver && <GameOver song={randomSong} guesses={guesses} stage={stage} />}
+      {isGameOver && <GameOver song={randomSong} guesses={guesses} stage={stage} playlistId={playlist.id} />}
     </div>
   );
 }
@@ -119,7 +119,17 @@ function GuessBoxes({ guesses }: { guesses: Guess[] }) {
   );
 }
 
-function GameOver({ song, guesses, stage }: { song: Song; guesses: Guess[]; stage: keyof typeof Stage }) {
+function GameOver({
+  song,
+  guesses,
+  stage,
+  playlistId,
+}: {
+  song: Song;
+  guesses: Guess[];
+  stage: keyof typeof Stage;
+  playlistId: string;
+}) {
   const SpotifyEmbed = () => (
     <iframe
       src={`https://open.spotify.com/embed/track/${song.id}`}
@@ -142,7 +152,11 @@ function GameOver({ song, guesses, stage }: { song: Song; guesses: Guess[]; stag
           <SpotifyEmbed />
         </CardContent>
         <CardFooter className="flex items-center justify-center">
-          <Button onClick={() => (window.location.href = "/")} className="w-1/2" variant="outline">
+          <Button
+            onClick={() => (window.location.href = `/playlist/${playlistId}`)}
+            className="w-1/2"
+            variant="outline"
+          >
             Play Again
           </Button>
         </CardFooter>

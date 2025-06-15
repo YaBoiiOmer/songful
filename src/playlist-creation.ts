@@ -19,17 +19,18 @@ export async function updatePlaylist({ url }: { url: string }) {
   return playlist;
 }
 
-export async function getPlaylistItems(playlistId: string) {
+export async function getAllPlaylistItems(playlistId: string) {
   const playlist = await spotify.playlists.getPlaylist(playlistId);
   if (!playlist) {
     throw new Error("Playlist not found");
   }
-  const tracks = [];
   let items = await spotify.playlists.getPlaylistItems(playlistId);
-  let nextQuery = "";
+  const tracks = [...items.items.map((item) => item.track)];
+  let offset = items.items.length;
   while (items.next) {
+    items = await spotify.playlists.getPlaylistItems(playlistId, undefined, undefined, undefined, offset);
     tracks.push(...items.items.map((item) => item.track));
-    items = await spotify.playlists.getPlaylistItems(playlistId);
+    offset += items.items.length;
   }
 
   return tracks;
@@ -41,9 +42,9 @@ export async function handlePlaylistCreation(playlistId: string): Promise<Partia
     if (!playlist) {
       throw new Error("Playlist not found");
     }
-    console.log("Playlist found:", playlist.name, "with", playlist.tracks.items.length, "songs");
+    const songs = await getAllPlaylistItems(playlistId);
+    console.log("Playlist found:", playlist.name, "with", songs.length, "songs");
 
-    const songs = playlist.tracks.items.map((item) => item.track);
     const { existingSongs, missingSongs } = await sortSongs(songs);
     console.log("Expecting to download", missingSongs.length, "songs");
     const downloadedSongs = await processBatch(missingSongs, downloadMissingSong, 15, 2000);
@@ -146,20 +147,4 @@ function getSettledResults<T>(results: PromiseSettledResult<T | null>[]) {
     .filter((result) => result.status === "fulfilled")
     .map((result) => result.value)
     .filter((obj) => obj !== null && obj !== undefined);
-}
-
-async function gatherSongs(playlistId: string): Promise<Track[]> {
-  const playlist = await spotify.playlists.getPlaylist(playlistId);
-  if (!playlist) {
-    throw new Error("Playlist not found");
-  }
-  let offset = 0;
-  let items = await spotify.playlists.getPlaylistItems(playlistId, undefined, undefined, undefined, offset);
-  const tracks = [...items.items.map((item) => item.track)];
-  while (items.next) {
-    offset += items.items.length;
-    items = await spotify.playlists.getPlaylistItems(playlistId, undefined, undefined, undefined, offset);
-    tracks.push(...items.items.map((item) => item.track));
-  }
-  return tracks;
 }
